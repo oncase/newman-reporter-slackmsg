@@ -1,15 +1,26 @@
-const prettyms = require('pretty-ms');
-const axios = require('axios').default;
+const prettyms = require("pretty-ms");
+const axios = require("axios").default;
 var jsonminify = require("jsonminify");
 
 let messageSize;
 
 // creates message for slack
-function slackMessage(stats, timings, failures, executions, maxMessageSize, collection, environment, channel, reportingUrl, limitFailures) {
-    messageSize = maxMessageSize;
-    let parsedFailures = parseFailures(failures);
-    let skipCount = getSkipCount(executions);
-    let failureMessage = `
+function slackMessage(
+  stats,
+  timings,
+  failures,
+  executions,
+  maxMessageSize,
+  collection,
+  environment,
+  channel,
+  reportingUrl,
+  limitFailures
+) {
+  messageSize = maxMessageSize;
+  let parsedFailures = parseFailures(failures);
+  let skipCount = getSkipCount(executions);
+  let failureMessage = `
     "attachments": [
         {
             "mrkdwn_in": ["text"],
@@ -17,13 +28,17 @@ function slackMessage(stats, timings, failures, executions, maxMessageSize, coll
             "author_name": "Newman Tests",
             "title": ":fire: Failures :fire:",
             "fields": [
-                ${limitFailures > 0 ? failMessage(parsedFailures.splice(0, limitFailures)) : failMessage(parsedFailures)}
+                ${
+                  limitFailures > 0
+                    ? failMessage(parsedFailures.splice(0, limitFailures))
+                    : failMessage(parsedFailures)
+                }
             ],
             "footer": "Newman Test",
             "footer_icon": "https://platform.slack-edge.com/img/default_application_icon.png"
         }
-    ]`
-    let successMessage = `
+    ]`;
+  let successMessage = `
     "attachments": [
         {
             "mrkdwn_in": ["text"],
@@ -33,8 +48,8 @@ function slackMessage(stats, timings, failures, executions, maxMessageSize, coll
             "footer": "Newman Test",
             "footer_icon": "https://platform.slack-edge.com/img/default_application_icon.png"
         }
-    ]`
-    return jsonminify(`
+    ]`;
+  return jsonminify(`
     {
         "channel": "${channel}",
         "blocks": [
@@ -70,7 +85,11 @@ function slackMessage(stats, timings, failures, executions, maxMessageSize, coll
                     },
                     {
                         "type": "mrkdwn",
-                        "text": "${stats.requests.total - parsedFailures.length - skipCount}"
+                        "text": "${
+                          stats.requests.total -
+                          parsedFailures.length -
+                          skipCount
+                        }"
                     },
                     {
                         "type": "mrkdwn",
@@ -94,7 +113,9 @@ function slackMessage(stats, timings, failures, executions, maxMessageSize, coll
                     },
                     {
                         "type": "mrkdwn",
-                        "text": "${prettyms(timings.completed - timings.started)}"
+                        "text": "${prettyms(
+                          timings.completed - timings.started
+                        )}"
                     }
                 ]
             },
@@ -107,7 +128,17 @@ function slackMessage(stats, timings, failures, executions, maxMessageSize, coll
                 },
                 {
                     "type": "mrkdwn",
-                    "text": "Total: ${stats.assertions.total}  Failed: ${stats.assertions.failed}"
+                    "text": "Total: ${stats.assertions.total}  Failed: ${
+    stats.assertions.failed
+  }"
+                },
+                {
+                    "type": "mrkdwn",
+                    "text": "Coverage: ${
+                      (100 *
+                        (stats.assertions.total - stats.assertions.failed)) /
+                      stats.assertions.total
+                    }%"
                 }
             ]
             },
@@ -120,91 +151,99 @@ function slackMessage(stats, timings, failures, executions, maxMessageSize, coll
 }
 
 function collectionAndEnvironentFileBlock(collection, environment) {
-    if (collection) {
-        return `{
+  if (collection) {
+    return `{
             "type": "section",
 			"text": {
 				"type": "mrkdwn",
-				"text": "Collection: ${collection} \\n Environment: ${environment ? environment : ''}"
+				"text": "Collection: ${collection} \\n Environment: ${
+      environment ? environment : ""
+    }"
 			}
-        }, `
-    }
-    return '';
+        }, `;
+  }
+  return "";
 }
 
 function reportingUrlSection(reportingUrl) {
-    if (reportingUrl) {
-        return `{
+  if (reportingUrl) {
+    return `{
             "type": "section",
 			"text": {
 				"type": "mrkdwn",
 				"text": "Reporting URL: ${reportingUrl}"
 			}
-        }, `
-    }
-    return '';
+        }, `;
+  }
+  return "";
 }
 
 function getSkipCount(executions) {
-    return executions.reduce((acc, execution) => {
-        if (execution.assertions) {
-            if (execution.assertions[0].skipped) {
-                acc = acc + 1;
-            };
-        };
-        return acc;
-    }, 0);
+  return executions.reduce((acc, execution) => {
+    if (execution.assertions) {
+      if (execution.assertions[0].skipped) {
+        acc = acc + 1;
+      }
+    }
+    return acc;
+  }, 0);
 }
-
 
 // Takes fail report and parse it for further processing
 function parseFailures(failures) {
-    return failures.reduce((acc, failure, index) => {
-        if (index === 0) {
-            acc.push({
-                name: failure.source.name || 'No Name',
-                tests: [{
-                    name: failure.error.name || 'No test name',
-                    test: failure.error.test || 'connection error',
-                    message: failure.error.message || 'No Error Message'
-                }]
-            });
-        } else if (acc[acc.length - 1].name !== failure.source.name) {
-            acc.push({
-                name: failure.source.name || 'No Name',
-                tests: [{
-                    name: failure.error.name || 'No test name',
-                    test: failure.error.test || 'connection error',
-                    message: failure.error.message || 'No Error Message'
-                }]
-            });
-        } else {
-            acc[acc.length - 1].tests.push({
-                name: failure.error.name || 'No test name',
-                test: failure.error.test || 'connection error',
-                message: failure.error.message || 'No Error Message'
-            })
-        }
-        return acc;
-    }, []);
+  return failures.reduce((acc, failure, index) => {
+    if (index === 0) {
+      acc.push({
+        name: failure.source.name || "No Name",
+        tests: [
+          {
+            name: failure.error.name || "No test name",
+            test: failure.error.test || "connection error",
+            message: failure.error.message || "No Error Message",
+          },
+        ],
+      });
+    } else if (acc[acc.length - 1].name !== failure.source.name) {
+      acc.push({
+        name: failure.source.name || "No Name",
+        tests: [
+          {
+            name: failure.error.name || "No test name",
+            test: failure.error.test || "connection error",
+            message: failure.error.message || "No Error Message",
+          },
+        ],
+      });
+    } else {
+      acc[acc.length - 1].tests.push({
+        name: failure.error.name || "No test name",
+        test: failure.error.test || "connection error",
+        message: failure.error.message || "No Error Message",
+      });
+    }
+    return acc;
+  }, []);
 }
 
 // Takes parsedFailures and create failMessages
 function failMessage(parsedFailures) {
-    return parsedFailures.map((failure) => {
-        return `
+  return parsedFailures
+    .map((failure) => {
+      return `
         {
             "title": "${failure.name}",
             "short": false
         },
         ${failErrors(failure.tests)}`;
-    }).join();
+    })
+    .join();
 }
 
 // Takes failMessages and create Error messages for each failures
 function failErrors(parsedErrors) {
-    return parsedErrors.map((error, index) => {
-        return `
+  return parsedErrors
+    .map((error, index) => {
+      return `
         {
             "value": "*\`${index + 1}. ${error.name} - ${error.test}\`*",
             "short": false
@@ -213,43 +252,43 @@ function failErrors(parsedErrors) {
             "value": "• ${cleanErrorMessage(error.message, messageSize)}",
             "short": false
         }`;
-    }).join();
+    })
+    .join();
 }
 
 function cleanErrorMessage(message, maxMessageSize) {
-    // replaces the quotes and double quotes in order for the message to be valid json format
-    // as well as cutting messages to size 100 and truncating it with ...
-    let filteredMessage = message.replace(/["']/g, "")
-    filteredMessage = filteredMessage.replace('expected', 'Expected -')
-    if (filteredMessage.length > maxMessageSize) {
-        return `${filteredMessage.substring(0, maxMessageSize)}...`;
-    }
-    return filteredMessage;
+  // replaces the quotes and double quotes in order for the message to be valid json format
+  // as well as cutting messages to size 100 and truncating it with ...
+  let filteredMessage = message.replace(/["']/g, "");
+  filteredMessage = filteredMessage.replace("expected", "Expected -");
+  if (filteredMessage.length > maxMessageSize) {
+    return `${filteredMessage.substring(0, maxMessageSize)}...`;
+  }
+  return filteredMessage;
 }
-
 
 // sends the message to slack via POST to webhook url
 async function send(url, message, token) {
-    const payload = {
-        method: 'POST',
-        url,
-        headers: {
-            'content-type': 'application/json',
-            'Authorization': 'Bearer ' + token
-        },
-        data: message
-    };
-    let result;
-    try {
-        result = await axios(payload);
-    } catch (e) {
-        result = false;
-        console.error(`Error in sending message to slack ${e}`);
-    }
-    return result;
+  const payload = {
+    method: "POST",
+    url,
+    headers: {
+      "content-type": "application/json",
+      Authorization: "Bearer " + token,
+    },
+    data: message,
+  };
+  let result;
+  try {
+    result = await axios(payload);
+  } catch (e) {
+    result = false;
+    console.error(`Error in sending message to slack ${e}`);
+  }
+  return result;
 }
 
 exports.slackUtils = {
-    send,
-    slackMessage
+  send,
+  slackMessage,
 };
