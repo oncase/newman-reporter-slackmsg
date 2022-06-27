@@ -133,12 +133,16 @@ function slackMessage(
   }"
                 },
                 {
+                  "type": "mrkdwn",
+                  "text": "Coverage:"
+              },
+                {
                     "type": "mrkdwn",
-                    "text": "Coverage: ${(
+                    "text": "${(
                       (100 *
                         (stats.assertions.total - stats.assertions.failed)) /
                       stats.assertions.total
-                    ).toFixed(2)}%"
+                    ).toFixed(0)}%"
                 }
             ]
             },
